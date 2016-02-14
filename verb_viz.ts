@@ -25,19 +25,27 @@ class RootWord extends Word {
 	}
 }
 
-// Takes raw json from data.json
+// Takes raw json from data.json -- stores all the data
 class Dictionary {
 	private roots: RootWord[];
 	constructor(input_json: any) {
 		this.roots = [];
-		console.log(this.build_root(input_json[0]));
+		this.build_all_roots(input_json);
+	}
+
+	build_all_roots(input_json: any) {
+		input_json.forEach((child) => {
+			this.roots.push(this.build_root(child));
+		});
 	}
 
 	build_root(raw_root: any) {
 		var new_root = new RootWord(raw_root.root, raw_root.trans);
+		
+		raw_root.childWords.forEach(function(child) {
+			new_root.add_child(new ChildWord(child.verb, child.trans, child.separ))
+		});
 
-		
-		
 		return new_root;
 
 	}
@@ -48,6 +56,8 @@ function run() {
 		if (error) {return console.warn(error);}
 		
 		var german_words = new Dictionary(json);
+
+		console.log(german_words);
 	})
 }
 
