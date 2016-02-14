@@ -84,19 +84,16 @@ class FDGNode {
 }
 
 class FDGLink {
-	link_length: number;
+	separable: boolean;
 	constructor(node: FDGNode, public source: number, public target: number, public value: number) {
-		if (node.separable) {
-			this.link_length = 300;
-		} else {
-			this.link_length = 150;
-		}
+		this.separable = node.separable;
 	}
 }
 
 // Technically holds the fdg AND the container
 class FDG {
 	svg: any;
+	fdg: any;
 	colors: d3.scale.Ordinal<string, string>;
 	node_rad: number;
 	hub_scale_factor: number;
@@ -127,6 +124,7 @@ class FDG {
 		this.pause_duration = 1000;
 
 		this.current_root = null;
+		this.fdg = null;
 	}
 
 	build_new_tree(new_root: RootWord) {
@@ -134,11 +132,67 @@ class FDG {
 		this.current_root = new_root;
 		var nodes = this.build_nodes();
 		var links = this.build_links(nodes);
-		console.log(links);
+		this.fdg = d3.layout.force().gravity(0.05).charge(-1000).size([this.width, this.height])
+			.nodes(nodes).links(links).linkDistance(function(this_link: FDGLink) {
+			if (this_link.separable) {
+				return 300;
+			} else {
+				return 150;
+			}
+		})
+			.start();
+
+		var drawn_links = this.svg.selectAll(".link")
+			.data(links)
+			.enter().append("line")
+			.attr("class", "link")
+			.style("stroke-dasharray", function(this_link: FDGLink) {
+				if (this_link.separable) {
+					return 10;
+				} else {
+					return 0
+				}
+			})
+			.style("stroke-width", function(this_link: FDGLink) {
+				if (this_link.separable) {
+					return Math.sqrt(this_link.value);
+				} else {
+					return this_link.value;
+				}
+			});
+
+		var drawn_nodes = this.svg.selectAll(".node")
+				.data(nodes)
+				.enter().append("g")
+				.attr("class", "node")
+				.call(this.fdg.drag)
+
+		drawn_nodes.append("circle")
+			.attr("r", (node: FDGNode) => {
+				if (node.hub) {
+					return this.node_rad * this.hub_scale_factor;
+				} else {
+					return this.node_rad;
+				}
+			}).style("fill", (node: FDGNode) => {
+				return this.colors(node.group.toString());
+			})
+
+		this.fdg.on("tick", () => {
+			this.adjustLinks(drawn_nodes, drawn_links)
+		})
 
 	}
 
-	private build_nodes() {
+	private adjustLinks(nodes: any, links: any) {
+    nodes.attr("transform", function(d) {return "translate(" + d.x + "," + d.y + ")"; });
+		links.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+	}
+		
+		private build_nodes() {
 		var i = 1;
 		var new_nodes: FDGNode[] = []
 		new_nodes.push(new FDGNode(this.current_root, i++));
@@ -169,6 +223,42 @@ class FDG {
 		}
 	}
 }
+
+// // node is the data, 
+// // box is the this context of the g svg
+// // extracts radius and uses this to position node within x bounds
+// function clampX(node, box) {
+// 	var width = 700;
+// 	   var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
+// 		  var newVal ;
+//   if (node.x - rad < 0){
+//  		      newVal = rad;
+//     } else if (node.x + rad  > width) {
+// 		      newVal = width - rad;
+// 		  } else {
+//         newVal = node.x;
+// 	   }
+//     node.x = newVal;
+//     return node.x;
+// }
+
+// // node is the data, 
+// // box is the this context of the g svg
+// // extracts radius and uses this to position node within y bounds
+// function clampY(node, box){
+// 	var height = 700;
+//     var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
+//     var newVal;
+//     if (node.y - rad < 0){
+//         newVal = rad;
+//     } else if (node.y + rad > height) {
+//         newVal = height - rad;
+//     } else {
+//         newVal = node.y;
+//     }
+//     node.y = newVal;
+//     return node.y
+// }
 
 
 function run() {
