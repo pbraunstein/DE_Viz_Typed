@@ -9,6 +9,7 @@ class ChildWord extends Word {
 	}
 }
 
+
 class RootWord extends Word {
 	private children: ChildWord[];
 	constructor(german: string, english: string) {
@@ -24,6 +25,7 @@ class RootWord extends Word {
 		return this.children;
 	}
 }
+
 
 // Takes raw json from data.json -- stores all the data
 // This might break if the names of the raw json changes be aware
@@ -49,7 +51,6 @@ class Dictionary {
 		});
 
 		return new_root;
-
 	}
 
 	private sort () {
@@ -58,6 +59,7 @@ class Dictionary {
 		});
 	}
 }
+
 
 function run() {
 	d3.json("data/data.json", function(error, json) {
