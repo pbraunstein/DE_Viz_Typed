@@ -26,11 +26,13 @@ class RootWord extends Word {
 }
 
 // Takes raw json from data.json -- stores all the data
+// This might break if the names of the raw json changes be aware
 class Dictionary {
 	private roots: RootWord[];
 	constructor(input_json: any) {
 		this.roots = [];
 		this.build_all_roots(input_json);
+		this.sort();
 	}
 
 	build_all_roots(input_json: any) {
@@ -48,6 +50,12 @@ class Dictionary {
 
 		return new_root;
 
+	}
+
+	private sort () {
+		this.roots.sort(function(root1: RootWord, root2: RootWord) {
+			return root1.german.localeCompare(root2.german);
+		});
 	}
 }
 
