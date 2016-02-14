@@ -60,12 +60,30 @@ class Dictionary {
 	}
 }
 
+// Can be root or child. So it takes parent class of both
+class FDGNode {
+	constructor(word: Word) {
+		if (word instanceof RootWord) {
+			console.log("ROOT");
+		} else {
+			console.log("CHILD");
+		}
+	}
+}
+
 // Technically holds the fdg AND the container
 class FDG {
-	private svg: any;
+	svg: any;
+	colors: d3.scale.Ordinal<string, string>;
+	node_rad: number;
+	hub_scale_factor: number;
+	trans_duration: number;
+	pause_duration: number;
+
 	private current_root: RootWord;
 
 	constructor(public width: number, public height: number) {
+		// create SVG
 		this.svg = d3.selectAll("div").select(function() { if (this.id == 'viz') return this; })
 					.append("svg").attr("width", this.width).attr("height", this.height);
 
@@ -78,11 +96,26 @@ class FDG {
 			.style("fill", "white")
 			.style("stroke", "black");
 
+		// init constants
+		this.colors = d3.scale.category20();
+		this.node_rad = 30;
+		this.hub_scale_factor = 2;
+		this.trans_duration = 1000;
+		this.pause_duration = 1000;
+
 		this.current_root = null;
 	}
 
 	build_new_tree(new_root: RootWord) {
 		this.current_root = new_root;
+		new FDGNode(new_root);
+	}
+
+	private clear_tree() {
+		if (this.current_root) {
+			this.svg.selectAll(".node").remove()
+			this.svg.selectAll(".link").remove()
+		}
 	}
 }
 
@@ -94,8 +127,7 @@ function run() {
 		var german_words = new Dictionary(json);
 
 		var fdg = new FDG(700, 700);
-		fdg.build_new_tree(german_words.roots[5]);
-		console.log(fdg);
+		fdg.build_new_tree(german_words.roots[6]);
 
 	})
 }
