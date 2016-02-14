@@ -30,7 +30,7 @@ class RootWord extends Word {
 // Takes raw json from data.json -- stores all the data
 // This might break if the names of the raw json changes be aware
 class Dictionary {
-	private roots: RootWord[];
+	roots: RootWord[];
 	constructor(input_json: any) {
 		this.roots = [];
 		this.build_all_roots(input_json);
@@ -60,6 +60,32 @@ class Dictionary {
 	}
 }
 
+// Technically holds the fdg AND the container
+class FDG {
+	private svg: any;
+	private current_root: RootWord;
+
+	constructor(public width: number, public height: number) {
+		this.svg = d3.selectAll("div").select(function() { if (this.id == 'viz') return this; })
+					.append("svg").attr("width", this.width).attr("height", this.height);
+
+		// add bounding box
+		this.svg.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", this.width)
+			.attr("height", this.height)
+			.style("fill", "white")
+			.style("stroke", "black");
+
+		this.current_root = null;
+	}
+
+	build_new_tree(new_root: RootWord) {
+		this.current_root = new_root;
+	}
+}
+
 
 function run() {
 	d3.json("data/data.json", function(error, json) {
@@ -67,7 +93,10 @@ function run() {
 		
 		var german_words = new Dictionary(json);
 
-		console.log(german_words);
+		var fdg = new FDG(700, 700);
+		fdg.build_new_tree(german_words.roots[5]);
+		console.log(fdg);
+
 	})
 }
 
