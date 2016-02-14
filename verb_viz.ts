@@ -35,13 +35,13 @@ class Dictionary {
 		this.sort();
 	}
 
-	build_all_roots(input_json: any) {
+	private build_all_roots(input_json: any) {
 		input_json.forEach((child) => {
 			this.roots.push(this.build_root(child));
 		});
 	}
 
-	build_root(raw_root: any) {
+	private build_root(raw_root: any) {
 		var new_root = new RootWord(raw_root.root, raw_root.trans);
 		
 		raw_root.childWords.forEach(function(child) {
