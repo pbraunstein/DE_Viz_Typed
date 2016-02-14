@@ -1,19 +1,19 @@
 /// <reference path="lib/d3.d.ts"/>
 abstract class Word {
-	constructor(public german: string, public english: string) {}
+	constructor(public german: string, public english: string, public separable: boolean) {}
 }
 
 class ChildWord extends Word {
-	constructor(german: string, english: string, public separable: boolean) {
-		super(german, english);
+	constructor(german: string, english: string, separable: boolean) {
+		super(german, english, separable);
 	}
 }
 
 
 class RootWord extends Word {
 	private children: ChildWord[];
-	constructor(german: string, english: string) {
-		super(german, english);
+	constructor(german: string, english: string, separable = false) {
+		super(german, english, separable);
 		this.children = [];
 	}
 
@@ -62,11 +62,34 @@ class Dictionary {
 
 // Can be root or child. So it takes parent class of both
 class FDGNode {
-	constructor(word: Word) {
+	german: string;
+	english: string;
+	hub: boolean;
+	separable: boolean;
+
+	// todo: group number used for color - not a great implementation
+	constructor(word: Word, public group: number) {
+		// Use type of class to determine if it should be a hub
 		if (word instanceof RootWord) {
-			console.log("ROOT");
+			this.hub = true;
 		} else {
-			console.log("CHILD");
+			this.hub = false;
+		}
+
+		this.german = word.german;
+		this.english = word.english;
+		this.separable = word.separable;
+
+	}
+}
+
+class FDGLink {
+	link_length: number;
+	constructor(node: FDGNode, public source: number, public target: number, public value: number) {
+		if (node.separable) {
+			this.link_length = 300;
+		} else {
+			this.link_length = 150;
 		}
 	}
 }
@@ -107,8 +130,36 @@ class FDG {
 	}
 
 	build_new_tree(new_root: RootWord) {
+		this.clear_tree()
 		this.current_root = new_root;
-		new FDGNode(new_root);
+		var nodes = this.build_nodes();
+		var links = this.build_links(nodes);
+		console.log(links);
+
+	}
+
+	private build_nodes() {
+		var i = 1;
+		var new_nodes: FDGNode[] = []
+		new_nodes.push(new FDGNode(this.current_root, i++));
+
+		this.current_root.get_all_children().forEach(function(child){
+			new_nodes.push(new FDGNode(child, i++));
+		})
+
+		return new_nodes;
+	}
+
+	private build_links(nodes: FDGNode[]) {
+		var new_links: FDGLink[] = [];
+
+		nodes.forEach(function(node, index) {
+			if (!node.hub) {
+				new_links.push(new FDGLink(node, 0, index, 6))
+			}
+		});
+
+		return new_links;
 	}
 
 	private clear_tree() {
