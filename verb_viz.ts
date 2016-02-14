@@ -7,3 +7,19 @@ class ChildWord extends Word {
 		super(german, english);
 	}
 }
+
+class RootWord extends Word {
+	private children: ChildWord[];
+	constructor(german: string, english: string) {
+		super(german, english);
+		this.children = [];
+	}
+
+	add_child(new_child: ChildWord) {
+		this.children.push(new_child);
+	}
+
+	get_all_children() {
+		return this.children;
+	}
+}
