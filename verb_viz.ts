@@ -186,7 +186,7 @@ class FDG {
 	}
 
 	private adjustLinks(nodes: d3.Selection<d3.layout.force.Node>, links: d3.Selection<d3.layout.force.Link<d3.layout.force.Node>>) {
-		nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+		nodes.attr("transform", (d) => { return "translate(" + this.clampX(d) + "," + this.clampY(d) + ")"; });
 		links.attr("x1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.x; })
 			 .attr("y1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.y; })
 			 .attr("x2", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.target.x; })
@@ -215,6 +215,26 @@ class FDG {
 		});
 
 		return new_links;
+	}
+
+	private clampX(node: d3.layout.force.Node) {
+		if (node.x < 0) {
+			return 0;
+		} else if (node.x > this.width) {
+			return this.width;
+		} else {
+			return node.x
+		}
+	}
+
+	private clampY(node: d3.layout.force.Node) {
+		if (node.y < 0) {
+			return 0;
+		} else if (node.y > this.height) {
+			return this.height;
+		} else {
+			return node.y;
+		}
 	}
 
 	private clear_tree() {
