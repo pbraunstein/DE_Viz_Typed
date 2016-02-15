@@ -93,7 +93,8 @@ class FDGLink {
 // Technically holds the fdg AND the container
 class FDG {
 	svg: any;
-	fdg: any;
+	//fdg: any;
+	fdg: d3.layout.Force<d3.layout.force.Link<d3.layout.force.Node>, d3.layout.force.Node>
 	colors: d3.scale.Ordinal<string, string>;
 	node_rad: number;
 	hub_scale_factor: number;
@@ -142,7 +143,7 @@ class FDG {
 		})
 			.start();
 
-		var drawn_links = this.svg.selectAll(".link")
+		var drawn_links:d3.Selection<d3.layout.force.Link<d3.layout.force.Node>> = this.svg.selectAll(".link")
 			.data(links)
 			.enter().append("line")
 			.attr("class", "link")
@@ -161,7 +162,7 @@ class FDG {
 				}
 			});
 
-		var drawn_nodes = this.svg.selectAll(".node")
+		var drawn_nodes: d3.Selection<d3.layout.force.Node> = this.svg.selectAll(".node")
 				.data(nodes)
 				.enter().append("g")
 				.attr("class", "node")
@@ -184,15 +185,15 @@ class FDG {
 
 	}
 
-	private adjustLinks(nodes: any, links: any) {
-    nodes.attr("transform", function(d) {return "translate(" + d.x + "," + d.y + ")"; });
-		links.attr("x1", function(d) { return d.source.x; })
-			.attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+	private adjustLinks(nodes: d3.Selection<d3.layout.force.Node>, links: d3.Selection<d3.layout.force.Link<d3.layout.force.Node>>) {
+		nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+		links.attr("x1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.x; })
+			 .attr("y1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.y; })
+			 .attr("x2", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.target.x; })
+		     .attr("y2", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.target.y; });
 	}
-		
-		private build_nodes() {
+
+	private build_nodes() {
 		var i = 1;
 		var new_nodes: FDGNode[] = []
 		new_nodes.push(new FDGNode(this.current_root, i++));
