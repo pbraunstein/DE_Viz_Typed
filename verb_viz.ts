@@ -191,10 +191,10 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 
 	private adjustLinks(nodes: d3.Selection<FDGNode>, links: d3.Selection<FDGLink<FDGNode>>) {
 		nodes.attr("transform", (d) => { return "translate(" + this.clampX(d) + "," + this.clampY(d) + ")"; });
-		links.attr("x1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.x; })
-			 .attr("y1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.y; })
-			 .attr("x2", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.target.x; })
-		     .attr("y2", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.target.y; });
+		links.attr("x1", function(d: FDGLink<FDGNode>) { return d.source.x; })
+			 .attr("y1", function(d: FDGLink<FDGNode>) { return d.source.y; })
+			 .attr("x2", function(d: FDGLink<FDGNode>) { return d.target.x; })
+		     .attr("y2", function(d: FDGLink<FDGNode>) { return d.target.y; });
 	}
 
 	private build_nodes() {
@@ -225,31 +225,49 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 	}
 
 	private clampX(node: FDGNode) {
-		if (node.x < 0) {
-			if (node.hub) {
-				return this.node_rad * this.hub_scale_factor
-			} else {
-				return this.node_rad;
-			}
-		} else if (node.x > this.width) {
-			if (node.hub) {
-				return this.width - this.node_rad * this.hub_scale_factor;
-			} else {
-				return this.width - this.node_rad;
-			}
+		var newval: number;
+		var radius: number;
+
+		// Get radius
+		if (node.hub) {
+			radius = this.node_rad * this.hub_scale_factor;
 		} else {
-			return node.x
+			radius = this.node_rad;
 		}
+
+		if (node.x < radius) {
+			newval = radius;
+		} else if (node.x > (this.width - radius)) {
+			newval = this.width - radius;
+		} else {
+			newval = node.x
+		}
+
+		node.x = newval;
+
+		return newval;
 	}
 
 	private clampY(node: FDGNode) {
-		if (node.y < 0) {
-			return 0;
-		} else if (node.y > this.height) {
-			return this.height;
+		var newval: number;
+		var radius: number;
+		// Get radius
+		if (node.hub) {
+			radius = this.node_rad * this.hub_scale_factor;
 		} else {
-			return node.y;
+			radius = this.node_rad;
 		}
+			
+		if (node.y < radius) {
+			newval = radius;
+		} else if (node.y > (this.height - radius)) {
+			newval = this.height - radius;
+		} else {
+			newval = node.y
+		}
+			
+		node.y = newval;
+		return newval;
 	}
 
 	private clear_tree() {
