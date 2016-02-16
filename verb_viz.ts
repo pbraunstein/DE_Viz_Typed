@@ -60,62 +60,65 @@ class Dictionary {
 	}
 }
 
-// Can be root or child. So it takes parent class of both
-class FDGNode {
-	german: string;
-	english: string;
+class FDGNode implements d3.layout.force.Node {
+	x: number;
+	y: number;
 	hub: boolean;
 	separable: boolean;
-
-	// todo: group number used for color - not a great implementation
+	german: string;
+	english: string;
 	constructor(word: Word, public group: number) {
-		// Use type of class to determine if it should be a hub
 		if (word instanceof RootWord) {
 			this.hub = true;
 		} else {
 			this.hub = false;
 		}
 
+		this.x = 0;
+		this.y = 0;
+	
+		this.separable = word.separable;
 		this.german = word.german;
 		this.english = word.english;
-		this.separable = word.separable;
-
 	}
 }
 
-class FDGLink {
+class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force.Node> {
 	separable: boolean;
-	constructor(node: FDGNode, public source: number, public target: number, public value: number) {
-		this.separable = node.separable;
+	constructor(public source: T, public target: T) {
+		if (source.separable || target.separable) {
+			this.separable = true;
+		} else {
+			this.separable = false;
+		}
 	}
 }
 
 // Technically holds the fdg AND the container
-class FDG {
-	svg: any;
-	//fdg: any;
-	fdg: d3.layout.Force<d3.layout.force.Link<d3.layout.force.Node>, d3.layout.force.Node>
-	colors: d3.scale.Ordinal<string, string>;
-	node_rad: number;
-	hub_scale_factor: number;
-	trans_duration: number;
-	pause_duration: number;
+ class FDG {
+ 	svg: any;
+	fdg: d3.layout.Force<FDGLink<FDGNode>, FDGNode>;
+ 	colors: d3.scale.Ordinal<string, string>;
+ 	node_rad: number;
+ 	hub_scale_factor: number;
+ 	trans_duration: number;
+ 	pause_duration: number;
 
-	private current_root: RootWord;
+ 	private current_root: RootWord;
 
-	constructor(public width: number, public height: number) {
-		// create SVG
-		this.svg = d3.selectAll("div").select(function() { if (this.id == 'viz') return this; })
-					.append("svg").attr("width", this.width).attr("height", this.height);
+ 	constructor(public width: number, public height: number) {
+ 		// create SVG
+ 		this.svg = d3.selectAll("div").select(function() { if (this.id == 'viz') return this; })
+ 					.append("svg").attr("width", this.width).attr("height", this.height);
 
-		// add bounding box
-		this.svg.append("rect")
-			.attr("x", 0)
-			.attr("y", 0)
-			.attr("width", this.width)
-			.attr("height", this.height)
-			.style("fill", "white")
-			.style("stroke", "black");
+ 		// add bounding box
+ 		this.svg.append("rect")
+ 			.attr("x", 0)
+ 			.attr("y", 0)
+ 			.attr("width", this.width)
+ 			.attr("height", this.height)
+ 			.style("fill", "white")
+ 			.style("stroke", "black");
 
 		// init constants
 		this.colors = d3.scale.category20();
@@ -128,41 +131,42 @@ class FDG {
 		this.fdg = null;
 	}
 
-	build_new_tree(new_root: RootWord) {
-		this.clear_tree()
-		this.current_root = new_root;
-		var nodes = this.build_nodes();
-		var links = this.build_links(nodes);
-		this.fdg = d3.layout.force().gravity(0.05).charge(-1000).size([this.width, this.height])
-			.nodes(nodes).links(links).linkDistance(function(this_link: FDGLink) {
-			if (this_link.separable) {
-				return 300;
+	  build_new_tree(new_root: RootWord) {
+		  this.clear_tree()
+		  this.current_root = new_root;
+		  var nodes = this.build_nodes();
+
+		  var links = this.build_links(nodes);
+
+		  this.fdg = d3.layout.force<FDGLink<FDGNode>, FDGNode>().gravity(0.05).charge(-1000).size([this.width, this.height])
+		 	.nodes(nodes).links(links).linkDistance(function(this_link: FDGLink<FDGNode>) {
+		 	if (this_link.separable) {
+	 		return 300;
 			} else {
 				return 150;
 			}
-		})
-			.start();
+		}).start();
 
-		var drawn_links:d3.Selection<d3.layout.force.Link<d3.layout.force.Node>> = this.svg.selectAll(".link")
+		var drawn_links:d3.Selection<FDGLink<FDGNode>> = this.svg.selectAll(".link")
 			.data(links)
 			.enter().append("line")
 			.attr("class", "link")
-			.style("stroke-dasharray", function(this_link: FDGLink) {
+			.style("stroke-dasharray", function(this_link: FDGLink<FDGNode>) {
 				if (this_link.separable) {
 					return 10;
 				} else {
 					return 0
 				}
 			})
-			.style("stroke-width", function(this_link: FDGLink) {
+			.style("stroke-width", function(this_link: FDGLink<FDGNode>) {
 				if (this_link.separable) {
-					return Math.sqrt(this_link.value);
+					return 2
 				} else {
-					return this_link.value;
+					return 6;
 				}
 			});
 
-		var drawn_nodes: d3.Selection<d3.layout.force.Node> = this.svg.selectAll(".node")
+		var drawn_nodes: d3.Selection<FDGNode> = this.svg.selectAll(".node")
 				.data(nodes)
 				.enter().append("g")
 				.attr("class", "node")
@@ -185,7 +189,7 @@ class FDG {
 
 	}
 
-	private adjustLinks(nodes: d3.Selection<d3.layout.force.Node>, links: d3.Selection<d3.layout.force.Link<d3.layout.force.Node>>) {
+	private adjustLinks(nodes: d3.Selection<FDGNode>, links: d3.Selection<FDGLink<FDGNode>>) {
 		nodes.attr("transform", (d) => { return "translate(" + this.clampX(d) + "," + this.clampY(d) + ")"; });
 		links.attr("x1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.x; })
 			 .attr("y1", function(d: d3.layout.force.Link<d3.layout.force.Node>) { return d.source.y; })
@@ -206,18 +210,21 @@ class FDG {
 	}
 
 	private build_links(nodes: FDGNode[]) {
-		var new_links: FDGLink[] = [];
+		var new_links: FDGLink<FDGNode>[] = [];
 
-		nodes.forEach(function(node, index) {
+		// get hub node
+		var center = nodes.filter(function(node) { if (node.hub) { return true; } })[0];
+
+		nodes.forEach(function(node) {
 			if (!node.hub) {
-				new_links.push(new FDGLink(node, 0, index, 6))
+				new_links.push(new FDGLink(center, node))
 			}
 		});
 
 		return new_links;
 	}
 
-	private clampX(node: d3.layout.force.Node) {
+	private clampX(node: FDGNode) {
 		if (node.x < 0) {
 			return 0;
 		} else if (node.x > this.width) {
@@ -227,7 +234,7 @@ class FDG {
 		}
 	}
 
-	private clampY(node: d3.layout.force.Node) {
+	private clampY(node: FDGNode) {
 		if (node.y < 0) {
 			return 0;
 		} else if (node.y > this.height) {
@@ -245,41 +252,41 @@ class FDG {
 	}
 }
 
-// // node is the data, 
-// // box is the this context of the g svg
-// // extracts radius and uses this to position node within x bounds
-// function clampX(node, box) {
-// 	var width = 700;
-// 	   var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
-// 		  var newVal ;
-//   if (node.x - rad < 0){
-//  		      newVal = rad;
-//     } else if (node.x + rad  > width) {
-// 		      newVal = width - rad;
-// 		  } else {
-//         newVal = node.x;
-// 	   }
-//     node.x = newVal;
-//     return node.x;
-// }
+// // // node is the data, 
+// // // box is the this context of the g svg
+// // // extracts radius and uses this to position node within x bounds
+// // function clampX(node, box) {
+// // 	var width = 700;
+// // 	   var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
+// // 		  var newVal ;
+// //   if (node.x - rad < 0){
+// //  		      newVal = rad;
+// //     } else if (node.x + rad  > width) {
+// // 		      newVal = width - rad;
+// // 		  } else {
+// //         newVal = node.x;
+// // 	   }
+// //     node.x = newVal;
+// //     return node.x;
+// // }
 
-// // node is the data, 
-// // box is the this context of the g svg
-// // extracts radius and uses this to position node within y bounds
-// function clampY(node, box){
-// 	var height = 700;
-//     var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
-//     var newVal;
-//     if (node.y - rad < 0){
-//         newVal = rad;
-//     } else if (node.y + rad > height) {
-//         newVal = height - rad;
-//     } else {
-//         newVal = node.y;
-//     }
-//     node.y = newVal;
-//     return node.y
-// }
+// // // node is the data, 
+// // // box is the this context of the g svg
+// // // extracts radius and uses this to position node within y bounds
+// // function clampY(node, box){
+// // 	var height = 700;
+// //     var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
+// //     var newVal;
+// //     if (node.y - rad < 0){
+// //         newVal = rad;
+// //     } else if (node.y + rad > height) {
+// //         newVal = height - rad;
+// //     } else {
+// //         newVal = node.y;
+// //     }
+// //     node.y = newVal;
+// //     return node.y
+// // }
 
 
 function run() {
