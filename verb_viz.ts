@@ -226,9 +226,17 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 
 	private clampX(node: FDGNode) {
 		if (node.x < 0) {
-			return 0;
+			if (node.hub) {
+				return this.node_rad * this.hub_scale_factor
+			} else {
+				return this.node_rad;
+			}
 		} else if (node.x > this.width) {
-			return this.width;
+			if (node.hub) {
+				return this.width - this.node_rad * this.hub_scale_factor;
+			} else {
+				return this.width - this.node_rad;
+			}
 		} else {
 			return node.x
 		}
@@ -251,43 +259,6 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 		}
 	}
 }
-
-// // // node is the data, 
-// // // box is the this context of the g svg
-// // // extracts radius and uses this to position node within x bounds
-// // function clampX(node, box) {
-// // 	var width = 700;
-// // 	   var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
-// // 		  var newVal ;
-// //   if (node.x - rad < 0){
-// //  		      newVal = rad;
-// //     } else if (node.x + rad  > width) {
-// // 		      newVal = width - rad;
-// // 		  } else {
-// //         newVal = node.x;
-// // 	   }
-// //     node.x = newVal;
-// //     return node.x;
-// // }
-
-// // // node is the data, 
-// // // box is the this context of the g svg
-// // // extracts radius and uses this to position node within y bounds
-// // function clampY(node, box){
-// // 	var height = 700;
-// //     var rad = d3.select(box)[0][0].childNodes[0].r.animVal.value;
-// //     var newVal;
-// //     if (node.y - rad < 0){
-// //         newVal = rad;
-// //     } else if (node.y + rad > height) {
-// //         newVal = height - rad;
-// //     } else {
-// //         newVal = node.y;
-// //     }
-// //     node.y = newVal;
-// //     return node.y
-// // }
-
 
 function run() {
 	d3.json("data/data.json", function(error, json) {
