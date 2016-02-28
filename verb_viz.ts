@@ -191,6 +191,18 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 
 
 		drawn_nodes.append("text")
+				   .attr('text-anchor', 'middle')
+				   .attr('dy', '.35em')
+				   .style('fill', 'gray')
+				   .style('stroke', 'black')
+				   .text(function(node){
+					   if (node.hub) {
+						   return node.german
+					   }
+					   else {
+					   	 	return node.german.slice(0, -new_root.german.length)
+					   }
+				   })
 		drawn_nodes.on('click', function(node) {
 			var this_g: d3.Selection<SVGGElement> = d3.select(this)
 			
