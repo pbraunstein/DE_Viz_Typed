@@ -1,4 +1,9 @@
 /// <reference path="lib/d3.d.ts"/>
+// CONSTANTS
+var TRANS_DURATION = 1000
+var PAUSE_DURATION = 3000
+var HUB_SCALE_FACTOR = 2
+
 abstract class Word {
 	constructor(public german: string, public english: string, public separable: boolean) {}
 }
@@ -181,7 +186,19 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 				}
 			}).style("fill", (node: FDGNode) => {
 				return this.colors(node.group.toString());
-			})
+			});
+
+
+
+		drawn_nodes.append("text")
+		drawn_nodes.on('click', function(node) {
+			var this_g: d3.Selection<SVGGElement> = d3.select(this)
+			
+			this_g.select('circle').transition().duration(TRANS_DURATION)
+				.attr('r', HUB_SCALE_FACTOR * <any>this_g.select('circle').attr('r'))
+				.transition().delay(PAUSE_DURATION).duration(TRANS_DURATION)
+				.attr('r', this_g.select('circle').attr('r'));
+		});
 
 		this.fdg.on("tick", () => {
 			this.adjustLinks(drawn_nodes, drawn_links)
