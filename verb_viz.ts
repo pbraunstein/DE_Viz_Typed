@@ -188,7 +188,10 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 				return this.colors(node.group.toString());
 			});
 
-
+		// create tooltip
+		drawn_nodes.append('title').text(function(node) {
+			return node.german + '\n' + node.english;
+		});
 
 		drawn_nodes.append("text")
 				   .attr('text-anchor', 'middle')
@@ -203,13 +206,28 @@ class FDGLink<T extends FDGNode> implements d3.layout.force.Link<d3.layout.force
 					   	 	return node.german.slice(0, -new_root.german.length)
 					   }
 				   })
+
+		var fdg_shallow = this.fdg;	   // closure captures this variable, just need to make it available.
 		drawn_nodes.on('click', function(node) {
+			//fdg_shallow.start();
 			var this_g: d3.Selection<SVGGElement> = d3.select(this)
 			
+			// Adjust text 
 			this_g.select('circle').transition().duration(TRANS_DURATION)
 				.attr('r', HUB_SCALE_FACTOR * <any>this_g.select('circle').attr('r'))
+				.style('opacity', 0.3)
+				.each("start", function() {d3.select(this).style("pointer-events", "none");})
 				.transition().delay(PAUSE_DURATION).duration(TRANS_DURATION)
-				.attr('r', this_g.select('circle').attr('r'));
+				.attr('r', this_g.select('circle').attr('r'))
+				.style('opacity', 1.0)
+				.each('end', function() {d3.select(this).style('pointer-events', 'auto')});
+
+			// super hacky
+			var orig_text = this_g.select('text').text();
+
+			this_g.select('text').transition().delay(TRANS_DURATION).text(node.english)
+				.transition().delay(PAUSE_DURATION)
+				.text(orig_text);
 		});
 
 		this.fdg.on("tick", () => {
